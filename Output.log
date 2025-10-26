@@ -1,0 +1,480 @@
+Last login: Sun Oct 26 11:41:01 on ttys010
+/Users/aritramanna/Library/Mobile\ Documents/com\~apple\~CloudDocs/C++_MOESI_Protocol/moesi ; exit;
+aritramanna@Aritras-MacBook-Air ~ % /Users/aritramanna/Library/Mobile\ Documents/com\~apple\~CloudDocs/C++_MOESI_Protocol/moesi ; exit;
+
+=== MOESI Cache Coherence Protocol Test ===
+
+=== Test 1: Read same address from multiple CPUs (Shared state) ===
+========================================
+CPU - 2: Executing Instruction: Read @ addr 0x4
+========================================
+CPU - 2: Cache-MISS @ addr 0x4 (index 1) | initial state: I
+CPU - 2: Sending Bus Request | BusRd @ addr 0x4
+CPU - 2: Requester Bus Response Received | data: 0x1111 | from: memory
+CPU - 2: Requesting Cache-Line Transition | [I->E]
+========================================
+CPU - 3: Executing Instruction: Read @ addr 0x4
+========================================
+CPU - 3: Cache-MISS @ addr 0x4 (index 1) | initial state: I
+CPU - 3: Sending Bus Request | BusRd @ addr 0x4
+CPU - 2: Snooped Cache-HIT @ addr 0x4 (index 1) | state: E
+CPU - 2: Snooped Cache-Line Transition | [E->S]
+CPU - 3: Requester Bus Response Received | data: 0x1111 | from: CPU--1
+CPU - 3: Requesting Cache-Line Transition | [I->S]
+
+=== Test 2: Read from already Shared cache ===
+========================================
+CPU - 0: Executing Instruction: Read @ addr 0x4
+========================================
+CPU - 0: Cache-MISS @ addr 0x4 (index 1) | initial state: I
+CPU - 0: Sending Bus Request | BusRd @ addr 0x4
+CPU - 2: Snooped Cache-HIT @ addr 0x4 (index 1) | state: S
+CPU - 3: Snooped Cache-HIT @ addr 0x4 (index 1) | state: S
+CPU - 0: Requester Bus Response Received | data: 0x1111 | from: memory
+CPU - 0: Requesting Cache-Line Transition | [I->S]
+
+=== Test 2.5: Write to Shared cache (BusUpgr) ===
+========================================
+CPU - 0: Executing Instruction: Write @ addr 0x4 | data: 0x9999
+========================================
+CPU - 0: Cache-HIT @ addr 0x4 (index 1) | initial state: S
+CPU - 0: Sending Bus Request | BusUpgr @ addr 0x4
+CPU - 2: Snooped Cache-HIT @ addr 0x4 (index 1) | state: S
+CPU - 2: Snooped Cache-Line Transition | [S->I]
+CPU - 3: Snooped Cache-HIT @ addr 0x4 (index 1) | state: S
+CPU - 3: Snooped Cache-Line Transition | [S->I]
+CPU - 0: Requester Bus Response Received | BusUpgr completed
+CPU - 0: Requesting Cache-Line Transition | [S->M]
+CPU - 0: Write completed | value: 0x9999 | final state: M
+
+=== Test 3: Write operation (BusRdX) - invalidates Shared copies ===
+========================================
+CPU - 1: Executing Instruction: Write @ addr 0x8 | data: 0xabcd
+========================================
+CPU - 1: Cache-MISS @ addr 0x8 (index 2) | initial state: I
+CPU - 1: Sending Bus Request | BusRdX @ addr 0x8
+CPU - 1: Requester Bus Response Received | data: 0x2222
+CPU - 1: Requesting Cache-Line Transition | [I->M]
+CPU - 1: Write completed | value: 0xabcd | final state: M
+
+=== Test 4: Read from Modified cache (M->O transition) ===
+========================================
+CPU - 0: Executing Instruction: Read @ addr 0x4
+========================================
+CPU - 0: Cache-HIT @ addr 0x4 (index 1) | initial state: M
+CPU - 0: Local Cache Hit Received | data: 0x9999 | from: local cache | state: M
+CPU - 0: Requesting Cache-Line Transition | [M->M]
+
+=== Test 5: Read different address (Exclusive state) ===
+========================================
+CPU - 2: Executing Instruction: Read @ addr 0x10
+========================================
+CPU - 2: Cache-MISS @ addr 0x10 (index 4) | initial state: I
+CPU - 2: Sending Bus Request | BusRd @ addr 0x10
+CPU - 2: Requester Bus Response Received | data: 0x4444 | from: memory
+CPU - 2: Requesting Cache-Line Transition | [I->E]
+
+=== Test 5.5: Write to Exclusive cache (E->M transition) ===
+========================================
+CPU - 2: Executing Instruction: Write @ addr 0x10 | data: 0xdddd
+========================================
+CPU - 2: Cache-HIT @ addr 0x10 (index 4) | initial state: E
+CPU - 2: No bus operation needed | already has exclusive ownership
+CPU - 2: Requesting Cache-Line Transition | [E->M]
+CPU - 2: Write completed | value: 0xdddd | final state: M
+
+=== Test 6: Write to different address ===
+========================================
+CPU - 3: Executing Instruction: Write @ addr 0xc | data: 0x5678
+========================================
+CPU - 3: Cache-MISS @ addr 0xc (index 3) | initial state: I
+CPU - 3: Sending Bus Request | BusRdX @ addr 0xc
+CPU - 3: Requester Bus Response Received | data: 0x3333
+CPU - 3: Requesting Cache-Line Transition | [I->M]
+CPU - 3: Write completed | value: 0x5678 | final state: M
+
+=== Test 7: Read back written address ===
+========================================
+CPU - 0: Executing Instruction: Read @ addr 0xc
+========================================
+CPU - 0: Cache-MISS @ addr 0xc (index 3) | initial state: I
+CPU - 0: Sending Bus Request | BusRd @ addr 0xc
+CPU - 3: Snooped Cache-HIT @ addr 0xc (index 3) | state: M
+CPU - 3: Snooped Cache-Line Transition | [M->O]
+CPU - 0: Requester Bus Response Received | data: 0x5678 | from: CPU-3
+CPU - 0: Requesting Cache-Line Transition | [I->S]
+
+=== Test 8: Read from Modified cache to create Owned state (M->O in another cache) ===
+========================================
+CPU - 1: Executing Instruction: Read @ addr 0x4
+========================================
+CPU - 1: Cache-MISS @ addr 0x4 (index 1) | initial state: I
+CPU - 1: Sending Bus Request | BusRd @ addr 0x4
+CPU - 0: Snooped Cache-HIT @ addr 0x4 (index 1) | state: M
+CPU - 0: Snooped Cache-Line Transition | [M->O]
+CPU - 1: Requester Bus Response Received | data: 0x9999 | from: CPU-0
+CPU - 1: Requesting Cache-Line Transition | [I->S]
+
+=== Test 9: Read again to maintain Owned state ===
+========================================
+CPU - 2: Executing Instruction: Read @ addr 0x4
+========================================
+CPU - 2: Cache-MISS @ addr 0x4 (index 1) | initial state: I
+CPU - 2: Sending Bus Request | BusRd @ addr 0x4
+CPU - 0: Snooped Cache-HIT @ addr 0x4 (index 1) | state: O
+CPU - 1: Snooped Cache-HIT @ addr 0x4 (index 1) | state: S
+CPU - 2: Requester Bus Response Received | data: 0x9999 | from: CPU-0
+CPU - 2: Requesting Cache-Line Transition | [I->S]
+
+=== Test 10: Write to Owned cache (O->M transition with BusUpgr) ===
+========================================
+CPU - 0: Executing Instruction: Write @ addr 0x4 | data: 0xeeee
+========================================
+CPU - 0: Cache-HIT @ addr 0x4 (index 1) | initial state: O
+CPU - 0: Sending Bus Request | BusUpgr @ addr 0x4
+CPU - 1: Snooped Cache-HIT @ addr 0x4 (index 1) | state: S
+CPU - 1: Snooped Cache-Line Transition | [S->I]
+CPU - 2: Snooped Cache-HIT @ addr 0x4 (index 1) | state: S
+CPU - 2: Snooped Cache-Line Transition | [S->I]
+CPU - 0: Requester Bus Response Received | BusUpgr completed
+CPU - 0: Requesting Cache-Line Transition | [O->M]
+CPU - 0: Write completed | value: 0xeeee | final state: M
+
+=== Test 11: Write to Modified cache (M->M transition) ===
+========================================
+CPU - 0: Executing Instruction: Write @ addr 0x4 | data: 0xffff
+========================================
+CPU - 0: Cache-HIT @ addr 0x4 (index 1) | initial state: M
+CPU - 0: No bus operation needed | already Modified
+CPU - 0: Write completed | value: 0xffff | final state: M
+
+=== Test 12: Conflict miss with dirty data (BusWB - Read case) ===
+========================================
+CPU - 0: Executing Instruction: Read @ addr 0x104
+========================================
+CPU - 0: Cache-MISS @ addr 0x104 (index 1) | initial state: M
+CPU - 0: Conflict miss detected with dirty data | write-back required
+CPU - 0: Sending Bus Request | BusWB @ addr 0x4
+CPU - 0: Write-back completed to memory | address: 0x4 | data: 0xffff
+CPU - 0: Write-back completed | data: 0xffff written to memory
+CPU - 0: Sending Bus Request | BusRd @ addr 0x104
+CPU - 0: Requester Bus Response Received | data: 0xaaaa | from: memory
+CPU - 0: Requesting Cache-Line Transition | [I->E]
+========================================
+CPU - 0: Executing Instruction: Write @ addr 0x104 | data: 0xbbbb
+========================================
+CPU - 0: Cache-HIT @ addr 0x104 (index 1) | initial state: E
+CPU - 0: No bus operation needed | already has exclusive ownership
+CPU - 0: Requesting Cache-Line Transition | [E->M]
+CPU - 0: Write completed | value: 0xbbbb | final state: M
+
+=== Test 13: Conflict miss with dirty data (BusWB - Write case) ===
+========================================
+CPU - 0: Executing Instruction: Write @ addr 0x4 | data: 0xcccc
+========================================
+CPU - 0: Cache-MISS @ addr 0x4 (index 1) | initial state: M
+CPU - 0: Conflict miss detected with dirty data | write-back required
+CPU - 0: Sending Bus Request | BusWB @ addr 0x104
+CPU - 0: Write-back completed to memory | address: 0x104 | data: 0xbbbb
+CPU - 0: Write-back completed | data: 0xbbbb written to memory
+CPU - 0: Sending Bus Request | BusRdX @ addr 0x4
+CPU - 0: Requester Bus Response Received | data: 0xffff
+CPU - 0: Requesting Cache-Line Transition | [I->M]
+CPU - 0: Write completed | value: 0xcccc | final state: M
+
+=== Test 14: Exclusive -> Invalid transition ===
+========================================
+CPU - 1: Executing Instruction: Read @ addr 0x14
+========================================
+CPU - 1: Cache-MISS @ addr 0x14 (index 5) | initial state: I
+CPU - 1: Sending Bus Request | BusRd @ addr 0x14
+CPU - 1: Requester Bus Response Received | data: 0x5555 | from: memory
+CPU - 1: Requesting Cache-Line Transition | [I->E]
+========================================
+CPU - 2: Executing Instruction: Write @ addr 0x14 | data: 0x8888
+========================================
+CPU - 2: Cache-MISS @ addr 0x14 (index 5) | initial state: I
+CPU - 2: Sending Bus Request | BusRdX @ addr 0x14
+CPU - 1: Snooped Cache-HIT @ addr 0x14 (index 5) | state: E
+CPU - 1: Snooped Cache-Line Transition | [E->I]
+CPU - 2: Requester Bus Response Received | data: 0x5555
+CPU - 2: Requesting Cache-Line Transition | [I->M]
+CPU - 2: Write completed | value: 0x8888 | final state: M
+
+=== Test 15: Owned -> Invalid transition ===
+========================================
+CPU - 0: Executing Instruction: Read @ addr 0x8
+========================================
+CPU - 0: Cache-MISS @ addr 0x8 (index 2) | initial state: I
+CPU - 0: Sending Bus Request | BusRd @ addr 0x8
+CPU - 1: Snooped Cache-HIT @ addr 0x8 (index 2) | state: M
+CPU - 1: Snooped Cache-Line Transition | [M->O]
+CPU - 0: Requester Bus Response Received | data: 0xabcd | from: CPU-1
+CPU - 0: Requesting Cache-Line Transition | [I->S]
+========================================
+CPU - 1: Executing Instruction: Read @ addr 0x8
+========================================
+CPU - 1: Cache-HIT @ addr 0x8 (index 2) | initial state: O
+CPU - 1: Local Cache Hit Received | data: 0xabcd | from: local cache | state: O
+CPU - 1: Requesting Cache-Line Transition | [O->O]
+========================================
+CPU - 2: Executing Instruction: Write @ addr 0x8 | data: 0x6666
+========================================
+CPU - 2: Cache-MISS @ addr 0x8 (index 2) | initial state: I
+CPU - 2: Sending Bus Request | BusRdX @ addr 0x8
+CPU - 0: Snooped Cache-HIT @ addr 0x8 (index 2) | state: S
+CPU - 0: Snooped Cache-Line Transition | [S->I]
+CPU - 1: Snooped Cache-HIT @ addr 0x8 (index 2) | state: O
+CPU - 1: Snooped Cache-Line Transition | [O->I]
+CPU - 2: Requester Bus Response Received | data: 0xabcd
+CPU - 2: Requesting Cache-Line Transition | [I->M]
+CPU - 2: Write completed | value: 0x6666 | final state: M
+
+=== Test 16: Read-Modify-Write sequence ===
+========================================
+CPU - 0: Executing Instruction: Read @ addr 0x64
+========================================
+CPU - 0: Cache-MISS @ addr 0x64 (index 25) | initial state: I
+CPU - 0: Sending Bus Request | BusRd @ addr 0x64
+CPU - 0: Requester Bus Response Received | data: 0xabcd | from: memory
+CPU - 0: Requesting Cache-Line Transition | [I->E]
+========================================
+CPU - 0: Executing Instruction: Write @ addr 0x64 | data: 0xaaaa
+========================================
+CPU - 0: Cache-HIT @ addr 0x64 (index 25) | initial state: E
+CPU - 0: No bus operation needed | already has exclusive ownership
+CPU - 0: Requesting Cache-Line Transition | [E->M]
+CPU - 0: Write completed | value: 0xaaaa | final state: M
+========================================
+CPU - 0: Executing Instruction: Read @ addr 0x64
+========================================
+CPU - 0: Cache-HIT @ addr 0x64 (index 25) | initial state: M
+CPU - 0: Local Cache Hit Received | data: 0xaaaa | from: local cache | state: M
+CPU - 0: Requesting Cache-Line Transition | [M->M]
+
+=== Test 17: Multiple Exclusive states ===
+========================================
+CPU - 1: Executing Instruction: Read @ addr 0xc8
+========================================
+CPU - 1: Cache-MISS @ addr 0xc8 (index 50) | initial state: I
+CPU - 1: Sending Bus Request | BusRd @ addr 0xc8
+CPU - 1: Requester Bus Response Received | data: 0x1000 | from: memory
+CPU - 1: Requesting Cache-Line Transition | [I->E]
+========================================
+CPU - 2: Executing Instruction: Read @ addr 0xcc
+========================================
+CPU - 2: Cache-MISS @ addr 0xcc (index 51) | initial state: I
+CPU - 2: Sending Bus Request | BusRd @ addr 0xcc
+CPU - 2: Requester Bus Response Received | data: 0x2000 | from: memory
+CPU - 2: Requesting Cache-Line Transition | [I->E]
+========================================
+CPU - 3: Executing Instruction: Read @ addr 0xd0
+========================================
+CPU - 3: Cache-MISS @ addr 0xd0 (index 52) | initial state: I
+CPU - 3: Sending Bus Request | BusRd @ addr 0xd0
+CPU - 3: Requester Bus Response Received | data: 0x3000 | from: memory
+CPU - 3: Requesting Cache-Line Transition | [I->E]
+
+=== Test 18: Exclusive snoop behavior (E->S) ===
+========================================
+CPU - 0: Executing Instruction: Read @ addr 0x12c
+========================================
+CPU - 0: Cache-MISS @ addr 0x12c (index 11) | initial state: I
+CPU - 0: Sending Bus Request | BusRd @ addr 0x12c
+CPU - 0: Requester Bus Response Received | data: 0xbbbb | from: memory
+CPU - 0: Requesting Cache-Line Transition | [I->E]
+========================================
+CPU - 1: Executing Instruction: Read @ addr 0x12c
+========================================
+CPU - 1: Cache-MISS @ addr 0x12c (index 11) | initial state: I
+CPU - 1: Sending Bus Request | BusRd @ addr 0x12c
+CPU - 0: Snooped Cache-HIT @ addr 0x12c (index 11) | state: E
+CPU - 0: Snooped Cache-Line Transition | [E->S]
+CPU - 1: Requester Bus Response Received | data: 0xbbbb | from: CPU--1
+CPU - 1: Requesting Cache-Line Transition | [I->S]
+
+=== Test 19: Write to Exclusive snoop data ===
+========================================
+CPU - 2: Executing Instruction: Read @ addr 0x190
+========================================
+CPU - 2: Cache-MISS @ addr 0x190 (index 36) | initial state: I
+CPU - 2: Sending Bus Request | BusRd @ addr 0x190
+CPU - 2: Requester Bus Response Received | data: 0xcccc | from: memory
+CPU - 2: Requesting Cache-Line Transition | [I->E]
+========================================
+CPU - 3: Executing Instruction: Write @ addr 0x190 | data: 0x5555
+========================================
+CPU - 3: Cache-MISS @ addr 0x190 (index 36) | initial state: I
+CPU - 3: Sending Bus Request | BusRdX @ addr 0x190
+CPU - 2: Snooped Cache-HIT @ addr 0x190 (index 36) | state: E
+CPU - 2: Snooped Cache-Line Transition | [E->I]
+CPU - 3: Requester Bus Response Received | data: 0xcccc
+CPU - 3: Requesting Cache-Line Transition | [I->M]
+CPU - 3: Write completed | value: 0x5555 | final state: M
+
+=== Test 20: Complex multi-core scenario ===
+========================================
+CPU - 0: Executing Instruction: Write @ addr 0x1f4 | data: 0x6666
+========================================
+CPU - 0: Cache-MISS @ addr 0x1f4 (index 61) | initial state: I
+CPU - 0: Sending Bus Request | BusRdX @ addr 0x1f4
+CPU - 0: Requester Bus Response Received | data: 0xdddd
+CPU - 0: Requesting Cache-Line Transition | [I->M]
+CPU - 0: Write completed | value: 0x6666 | final state: M
+========================================
+CPU - 1: Executing Instruction: Read @ addr 0x1f4
+========================================
+CPU - 1: Cache-MISS @ addr 0x1f4 (index 61) | initial state: I
+CPU - 1: Sending Bus Request | BusRd @ addr 0x1f4
+CPU - 0: Snooped Cache-HIT @ addr 0x1f4 (index 61) | state: M
+CPU - 0: Snooped Cache-Line Transition | [M->O]
+CPU - 1: Requester Bus Response Received | data: 0x6666 | from: CPU-0
+CPU - 1: Requesting Cache-Line Transition | [I->S]
+========================================
+CPU - 2: Executing Instruction: Read @ addr 0x1f4
+========================================
+CPU - 2: Cache-MISS @ addr 0x1f4 (index 61) | initial state: I
+CPU - 2: Sending Bus Request | BusRd @ addr 0x1f4
+CPU - 0: Snooped Cache-HIT @ addr 0x1f4 (index 61) | state: O
+CPU - 1: Snooped Cache-HIT @ addr 0x1f4 (index 61) | state: S
+CPU - 2: Requester Bus Response Received | data: 0x6666 | from: CPU-0
+CPU - 2: Requesting Cache-Line Transition | [I->S]
+========================================
+CPU - 3: Executing Instruction: Write @ addr 0x1f4 | data: 0x7777
+========================================
+CPU - 3: Cache-MISS @ addr 0x1f4 (index 61) | initial state: I
+CPU - 3: Sending Bus Request | BusRdX @ addr 0x1f4
+CPU - 0: Snooped Cache-HIT @ addr 0x1f4 (index 61) | state: O
+CPU - 0: Snooped Cache-Line Transition | [O->I]
+CPU - 1: Snooped Cache-HIT @ addr 0x1f4 (index 61) | state: S
+CPU - 1: Snooped Cache-Line Transition | [S->I]
+CPU - 2: Snooped Cache-HIT @ addr 0x1f4 (index 61) | state: S
+CPU - 2: Snooped Cache-Line Transition | [S->I]
+CPU - 3: Requester Bus Response Received | data: 0x6666
+CPU - 3: Requesting Cache-Line Transition | [I->M]
+CPU - 3: Write completed | value: 0x7777 | final state: M
+
+=== Test 21: Sequential operations on same address ===
+========================================
+CPU - 0: Executing Instruction: Read @ addr 0x258
+========================================
+CPU - 0: Cache-MISS @ addr 0x258 (index 22) | initial state: I
+CPU - 0: Sending Bus Request | BusRd @ addr 0x258
+CPU - 0: Requester Bus Response Received | data: 0xeeee | from: memory
+CPU - 0: Requesting Cache-Line Transition | [I->E]
+========================================
+CPU - 1: Executing Instruction: Write @ addr 0x258 | data: 0x8888
+========================================
+CPU - 1: Cache-MISS @ addr 0x258 (index 22) | initial state: I
+CPU - 1: Sending Bus Request | BusRdX @ addr 0x258
+CPU - 0: Snooped Cache-HIT @ addr 0x258 (index 22) | state: E
+CPU - 0: Snooped Cache-Line Transition | [E->I]
+CPU - 1: Requester Bus Response Received | data: 0xeeee
+CPU - 1: Requesting Cache-Line Transition | [I->M]
+CPU - 1: Write completed | value: 0x8888 | final state: M
+========================================
+CPU - 2: Executing Instruction: Read @ addr 0x258
+========================================
+CPU - 2: Cache-MISS @ addr 0x258 (index 22) | initial state: I
+CPU - 2: Sending Bus Request | BusRd @ addr 0x258
+CPU - 1: Snooped Cache-HIT @ addr 0x258 (index 22) | state: M
+CPU - 1: Snooped Cache-Line Transition | [M->O]
+CPU - 2: Requester Bus Response Received | data: 0x8888 | from: CPU-1
+CPU - 2: Requesting Cache-Line Transition | [I->S]
+========================================
+CPU - 3: Executing Instruction: Write @ addr 0x258 | data: 0x9999
+========================================
+CPU - 3: Cache-MISS @ addr 0x258 (index 22) | initial state: I
+CPU - 3: Sending Bus Request | BusRdX @ addr 0x258
+CPU - 1: Snooped Cache-HIT @ addr 0x258 (index 22) | state: O
+CPU - 1: Snooped Cache-Line Transition | [O->I]
+CPU - 2: Snooped Cache-HIT @ addr 0x258 (index 22) | state: S
+CPU - 2: Snooped Cache-Line Transition | [S->I]
+CPU - 3: Requester Bus Response Received | data: 0x8888
+CPU - 3: Requesting Cache-Line Transition | [I->M]
+CPU - 3: Write completed | value: 0x9999 | final state: M
+========================================
+CPU - 0: Executing Instruction: Read @ addr 0x258
+========================================
+CPU - 0: Cache-MISS @ addr 0x258 (index 22) | initial state: I
+CPU - 0: Sending Bus Request | BusRd @ addr 0x258
+CPU - 3: Snooped Cache-HIT @ addr 0x258 (index 22) | state: M
+CPU - 3: Snooped Cache-Line Transition | [M->O]
+CPU - 0: Requester Bus Response Received | data: 0x9999 | from: CPU-3
+CPU - 0: Requesting Cache-Line Transition | [I->S]
+
+=== ATOMIC OPERATIONS TEST ===
+=== 4 threads (simulating 4 CPU cores) incrementing shared counter from 0 to 4 ===
+
+Initial value: 0
+
+Launching 4 threads to perform atomic increments...
+========================================
+CPU - 0: Executing Instruction: Atomic_ADD @ addr 0x3e8
+========================================
+
+>>> CPU - 0: ACQUIRED BUS LOCK | Executing Atomic Operation Atomic_ADD @ addr 0x3e8
+CPU - 0: Sending Bus Request | BusRdX @ addr 0x3e8
+CPU - 0: Requesting Cache-Line Transition | [I->M]
+CPU - 0: Performing atomic operation | type: Atomic_ADD | old value: 0x0 | operand: 0x1 | new value: 0x1
+CPU - 0: Atomic operation completed | value: 0x1 | final state: M
+<<< CPU - 0: RELEASED BUS LOCK
+
+========================================
+CPU - 1: Executing Instruction: Atomic_ADD @ addr 0x3e8
+========================================
+
+>>> CPU - 1: ACQUIRED BUS LOCK | Executing Atomic Operation Atomic_ADD @ addr 0x3e8
+CPU - 1: Sending Bus Request | BusRdX @ addr 0x3e8
+CPU - 0: Snooped Cache-HIT @ addr 0x3e8 (index 58) | state: M
+CPU - 0: Snooped Cache-Line Transition | [M->I]
+CPU - 1: Requesting Cache-Line Transition | [I->M]
+CPU - 1: Performing atomic operation | type: Atomic_ADD | old value: 0x1 | operand: 0x1 | new value: 0x2
+CPU - 1: Atomic operation completed | value: 0x2 | final state: M
+<<< CPU - 1: RELEASED BUS LOCK
+
+========================================
+CPU - 2: Executing Instruction: Atomic_ADD @ addr 0x3e8
+========================================
+
+>>> CPU - 2: ACQUIRED BUS LOCK | Executing Atomic Operation Atomic_ADD @ addr 0x3e8
+CPU - 2: Sending Bus Request | BusRdX @ addr 0x3e8
+CPU - 1: Snooped Cache-HIT @ addr 0x3e8 (index 58) | state: M
+CPU - 1: Snooped Cache-Line Transition | [M->I]
+CPU - 2: Requesting Cache-Line Transition | [I->M]
+CPU - 2: Performing atomic operation | type: Atomic_ADD | old value: 0x2 | operand: 0x1 | new value: 0x3
+CPU - 2: Atomic operation completed | value: 0x3 | final state: M
+<<< CPU - 2: RELEASED BUS LOCK
+
+========================================
+CPU - 3: Executing Instruction: Atomic_ADD @ addr 0x3e8
+========================================
+
+>>> CPU - 3: ACQUIRED BUS LOCK | Executing Atomic Operation Atomic_ADD @ addr 0x3e8
+CPU - 3: Sending Bus Request | BusRdX @ addr 0x3e8
+CPU - 2: Snooped Cache-HIT @ addr 0x3e8 (index 58) | state: M
+CPU - 2: Snooped Cache-Line Transition | [M->I]
+CPU - 3: Requesting Cache-Line Transition | [I->M]
+CPU - 3: Performing atomic operation | type: Atomic_ADD | old value: 0x3 | operand: 0x1 | new value: 0x4
+CPU - 3: Atomic operation completed | value: 0x4 | final state: M
+<<< CPU - 3: RELEASED BUS LOCK
+
+=== CACHE LINE STATE FOR ALL CORES ===
+CPU - 0: Cache line 58 | address: 0x3e8 | value: 0x1 | state: I
+CPU - 1: Cache line 58 | address: 0x3e8 | value: 0x2 | state: I
+CPU - 2: Cache line 58 | address: 0x3e8 | value: 0x3 | state: I
+CPU - 3: Cache line 58 | address: 0x3e8 | value: 0x4 | state: M
+
+=== FINAL RESULT ===
+Expected final value: 4
+Final value in Modified cache line (CPU-3): 4
+
+Atomic ADD: Test PASSED
+
+Saving session...
+...copying shared history...
+...saving history...truncating history files...
+...completed.
+
+[Process completed]
+
