@@ -169,7 +169,7 @@ When multiple caches respond to a bus operation, priority order:
 
 ## Memory Configuration
 
-- **Memory Size**: 2048 words (8KB)
+- **Memory Size**: 2048 Bytes (2KB)
 - **Cache Size**: 64 lines per processor
 - **Number of Processors**: 4
 - **Mapping**: Direct-mapped cache
