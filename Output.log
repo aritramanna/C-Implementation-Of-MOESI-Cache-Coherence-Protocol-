@@ -1,7 +1,3 @@
-Last login: Sun Oct 26 11:41:01 on ttys010
-/Users/aritramanna/Library/Mobile\ Documents/com\~apple\~CloudDocs/C++_MOESI_Protocol/moesi ; exit;
-aritramanna@Aritras-MacBook-Air ~ % /Users/aritramanna/Library/Mobile\ Documents/com\~apple\~CloudDocs/C++_MOESI_Protocol/moesi ; exit;
-
 === MOESI Cache Coherence Protocol Test ===
 
 === Test 1: Read same address from multiple CPUs (Shared state) ===
@@ -470,11 +466,4 @@ Expected final value: 4
 Final value in Modified cache line (CPU-3): 4
 
 Atomic ADD: Test PASSED
-
-Saving session...
-...copying shared history...
-...saving history...truncating history files...
-...completed.
-
-[Process completed]
 
